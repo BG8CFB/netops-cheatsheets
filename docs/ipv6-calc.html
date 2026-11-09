@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPv6 地址计算器 — 展开/压缩/前缀换算 | 网工在线工具</title>
+<meta name="description" content="在线 IPv6 地址计算器：IPv6 地址展开、压缩格式互转、前缀长度换算网络地址与掩码、地址数量统计。支持 2001:db8::1 等任意合法格式，网络工程师 IPv6 迁移必备工具。">
+<meta name="keywords" content="IPv6 计算器, IPv6 展开, IPv6 压缩, IPv6 前缀换算, IPv6 子网划分, ipv6 subnet calculator, 网络工程师工具">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/ipv6-calc.html">
+<style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:40px 16px;}
+.wrap{max-width:860px;margin:0 auto;}
+h1{font-size:26px;margin:0 0 6px;}
+.sub{color:#8b949e;font-size:14px;margin-bottom:24px;}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;margin-bottom:16px;}
+label{display:block;font-size:13px;color:#8b949e;margin-bottom:6px;}
+input{width:100%;box-sizing:border-box;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:10px 12px;font-size:15px;font-family:ui-monospace,monospace;}
+input:focus{outline:none;border-color:#58a6ff;}
+.row{display:flex;gap:12px;margin-top:12px;}
+.row>div{flex:1;}
+button{background:#238636;color:#fff;border:1px solid rgba(240,246,252,0.1);border-radius:6px;padding:10px 22px;font-size:15px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;}
+button:hover{background:#2ea043;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid #30363d;border-radius:6px;margin-bottom:8px;background:#0d1117;cursor:pointer;}
+.rl{color:#8b949e;font-size:13px;flex-shrink:0;margin-right:12px;}
+.rv{font-family:ui-monospace,monospace;font-size:14px;word-break:break-all;text-align:right;}
+.copied{color:#3fb950;}
+.err{color:#f85149;padding:12px;border:1px solid #f8514933;border-radius:6px;background:#f8514911;}
+.tip{color:#8b949e;font-size:12px;margin-top:4px;}
+h2{font-size:17px;margin:28px 0 10px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{border:1px solid #30363d;padding:6px 10px;text-align:left;}
+th{background:#161b22;color:#8b949e;}
+.mono{font-family:ui-monospace,monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>IPv6 地址计算器</h1>
+<div class="sub">展开 · 压缩 · 前缀换算 · 地址数量 — 纯本地计算，数据不出浏览器</div>
+<div class="box">
+<label>IPv6 地址（支持压缩/完整/带前缀）</label>
+<input id="vin" placeholder="2001:db8::1" spellcheck="false">
+<div class="row">
+<div><label>前缀长度 /prefix</label><input id="vprefix" placeholder="64" inputmode="numeric"></div>
+</div>
+<button onclick="render()">计算</button>
+<div class="tip">点击结果行即可复制</div>
+</div>
+<div id="vout"></div>
+<h2>IPv6 常用前缀速查</h2>
+<table>
+<tr><th>前缀</th><th>掩码</th><th>数量级</th><th>典型用途</th></tr>
+<tr><td class="mono">/32</td><td class="mono">ffff:ffff::</td><td>2^96</td><td>ISP 初始分配</td></tr>
+<tr><td class="mono">/48</td><td class="mono">ffff:ffff:ffff::</td><td>2^80</td><td>站点分配（企业/园区）</td></tr>
+<tr><td class="mono">/56</td><td class="mono">ffff:ffff:ffff:ff00::</td><td>2^72</td><td>家庭宽带分配</td></tr>
+<tr><td class="mono">/64</td><td class="mono">ffff:ffff:ffff:ffff::</td><td>2^64</td><td>标准子网（SLAAC 要求）</td></tr>
+<tr><td class="mono">/112</td><td class="mono">ffff:ffff:ffff:ffff:ffff:ffff:ffff:0</td><td>2^16</td><td>服务器地址池</td></tr>
+<tr><td class="mono">/126</td><td class="mono">ffff:...:fc00</td><td>4</td><td>点对点链路</td></tr>
+<tr><td class="mono">/127</td><td class="mono">ffff:...:fe00</td><td>2</td><td>路由器互联（RFC 6164）</td></tr>
+<tr><td class="mono">/128</td><td class="mono">ffff:...:ffff</td><td>1</td><td>主机地址/回环</td></tr>
+</table>
+<h2>IPv6 压缩规则速记</h2>
+<div class="box"><div class="mono" style="font-size:13px;line-height:1.9">
+① 每组前导零省略：<span style="color:#58a6ff">0db8 → db8</span><br>
+② 连续全零组用 :: 替代（只能用一次）：<span style="color:#58a6ff">2001:0db8:0000:...:0001 → 2001:db8::1</span><br>
+③ fe80::/10 是链路本地，ff00::/8 是组播，2000::/3 是全球单播<br>
+④ ::1 回环，:: 未指定地址
+</div></div>
+<p style="color:#8b949e;font-size:13px;margin-top:28px">更多网工工具：<a href="https://bg8cfb.github.io/netops-cheatsheets/subnet-calc.html" style="color:#58a6ff">IPv4 子网计算器</a> · <a href="https://bg8cfb.github.io/netops-cheatsheets/command-map.html" style="color:#58a6ff">三厂商命令对照表</a> · <a href="https://bg8cfb.github.io/netcfg-vault/" style="color:#58a6ff">交换机配置自动备份 netcfg-vault</a></p>
+</div>
+<script>
+function expandV6(s) {
+  if (!s || typeof s !== 'string') return null;
+  s = s.trim().toLowerCase();
+  if (!/^[0-9a-f:]+$/.test(s)) return null;
+  if ((s.match(/::/g) || []).length > 1) return null;
+  if (s.indexOf('::') >= 0) {
+    const parts = s.split('::');
+    const head = parts[0] ? parts[0].split(':') : [];
+    const tail = parts[1] ? parts[1].split(':') : [];
+    if (head.length + tail.length > 7) return null;
+    const mid = new Array(8 - head.length - tail.length).fill('0');
+    const groups = head.concat(mid, tail);
+    if (groups.length !== 8) return null;
+    s = groups.join(':');
+  }
+  const groups = s.split(':');
+  if (groups.length !== 8) return null;
+  for (const g of groups) { if (!/^[0-9a-f]{1,4}$/.test(g)) return null; }
+  return groups.map(g => g.padStart(4, '0')).join(':');
+}
+function compressV6(full) {
+  const gs = full.split(':').map(g => g.replace(/^0+/, '') || '0');
+  let bestStart = -1, bestLen = 0, curStart = -1, curLen = 0;
+  for (let i = 0; i < 8; i++) {
+    if (gs[i] === '0') { if (curStart < 0) curStart = i; curLen++; if (curLen > bestLen) { bestLen = curLen; bestStart = curStart; } }
+    else { curStart = -1; curLen = 0; }
+  }
+  if (bestLen < 2) return gs.join(':');
+  const head = gs.slice(0, bestStart).join(':');
+  const tail = gs.slice(bestStart + bestLen).join(':');
+  return head + '::' + tail;
+}
+function v6Mask(p) {
+  if (p < 0 || p > 128 || isNaN(p)) return null;
+  let bits = '';
+  for (let i = 0; i < 128; i++) bits += i < p ? '1' : '0';
+  const gs = [];
+  for (let i = 0; i < 8; i++) gs.push(parseInt(bits.substr(i * 16, 16), 2).toString(16).padStart(4, '0'));
+  return gs.join(':');
+}
+function v6Apply(full, p) {
+  const gs = full.split(':').map(g => parseInt(g, 16));
+  const mask = v6Mask(p).split(':').map(g => parseInt(g, 16));
+  return gs.map((g, i) => (g & mask[i]).toString(16).padStart(4, '0')).join(':');
+}
+function v6Last(full, p) {
+  const gs = full.split(':').map(g => parseInt(g, 16));
+  const mask = v6Mask(p).split(':').map(g => parseInt(g, 16));
+  const inv = mask.map(m => (~m) & 0xffff);
+  return gs.map((g, i) => (g | inv[i]).toString(16).padStart(4, '0')).join(':');
+}
+function fmtBig(n) {
+  if (n > Math.pow(2, 53)) { const e = Math.log2(n); const p2 = Math.floor(e); const rem = n / Math.pow(2, p2); return rem.toFixed(0) === '1' ? '2^' + p2 + '（约 ' + (n / Math.pow(10, Math.floor(Math.log10(n)))).toFixed(1) + '×10^' + Math.floor(Math.log10(n)) + '）' : String(n); }
+  return n.toLocaleString('en-US');
+}
+function render() {
+  const inp = document.getElementById('vin').value;
+  const pfx = parseInt(document.getElementById('vprefix').value, 10);
+  const out = document.getElementById('vout');
+  const full = expandV6(inp);
+  let html = '';
+  if (!full) { out.innerHTML = '<div class="err">输入无效：请检查 IPv6 地址格式（如 2001:db8::1）</div>'; return; }
+  html += card('完整展开', full.toUpperCase());
+  html += card('压缩格式', compressV6(full));
+  if (!isNaN(pfx) && pfx >= 0 && pfx <= 128) {
+    const net = v6Apply(full, pfx);
+    const last = v6Last(full, pfx);
+    html += card('网络地址 /' + pfx, net.toUpperCase());
+    html += card('掩码', v6Mask(pfx).toUpperCase());
+    html += card('最后一个地址', last.toUpperCase());
+    html += card('地址数量', fmtBig(v6HostCount2(pfx)));
+  }
+  out.innerHTML = html;
+}
+function v6HostCount2(p) { return Math.pow(2, 128 - p); }
+function card(t, v) { return '<div class="rrow"><div class="rl">' + t + '</div><div class="rv mono" onclick="copyV(this)">' + v + '</div></div>'; }
+function copyV(el) { navigator.clipboard.writeText(el.textContent); el.classList.add('copied'); setTimeout(function(){ el.classList.remove('copied'); }, 600); }
+</script>
+</body>
+</html>
