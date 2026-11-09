@@ -49,7 +49,7 @@ function isContig(mask){var seen0=false;for(var i=31;i>=0;i--){var b=(mask>>>i)&
 function parseInput(s){s=s.trim();if(/^[0-9]{1,2}$/.test(s)){var p=+s;if(p<0||p>32)return null;var m=(0xffffffff<<(32-p))>>>0;return {mask:m,wild:(~m)>>>0,cidr:p,src:"CIDR "+p}}
 var v=ip2int(s);if(v===null)return null;
 if(isContig(v)){var cidr=cidrOf(v);return {mask:v,wild:(~v)>>>0,cidr:cidr,src:"子网掩码 "+s}}
-var w=(~v)>>>0;if(isContig(w)){var c2=32-cidrOf(w);return {mask:w,wild:v,cidr:c2,src:"通配符掩码 "+s}}
+var w=(~v)>>>0;if(isContig(w)){return {mask:w,wild:v,cidr:cidrOf(w),src:"通配符掩码 "+s}}
 return {mask:null,wild:v,cidr:null,src:"非连续通配符 "+s,nonContig:true}}
 function calc(){var s=document.getElementById("in").value;var out=document.getElementById("out");
 if(!s.trim()){out.innerHTML='<div class="card"><h3 class="err">请输入子网掩码、通配符掩码或 CIDR</h3></div>';return}
