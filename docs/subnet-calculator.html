@@ -38,7 +38,7 @@ a{color:#58a6ff} .err{color:#f85149} code{background:#161b22;padding:2px 6px;bor
 <p><a href="command-map.html">H3C / Huawei / Cisco command map</a> · <a href="https://bg8cfb.github.io/netcfg-vault/config-diff.html">Network config diff (online)</a> · <a href="https://bg8cfb.github.io/netcfg-vault/config-audit.html">Config security audit (online)</a> · <a href="https://github.com/BG8CFB/netops-utils">netops-utils CLI (subnet/diff/audit, zero-dependency Node.js)</a></p>
 
 <script>
-function ip2int(s){var p=s.trim().split('.');if(p.length!==4)return null;var v=0;for(var i=0;i<4;i++){var n=+p[i];if(isNaN(n)||n<0||n>255||!/^d{1,3}$/.test(p[i]))return null;v=(v<<8)+n}return v>>>0}
+function ip2int(s){var p=s.trim().split('.');if(p.length!==4)return null;var v=0;for(var i=0;i<4;i++){var n=+p[i];if(isNaN(n)||n<0||n>255||!/^[0-9]{1,3}$/.test(p[i]))return null;v=(v<<8)+n}return v>>>0}
 function int2ip(v){return [(v>>>24)&255,(v>>>16)&255,(v>>>8)&255,v&255].join('.')}
 function parseMask(s){s=s.trim();if(s[0]==='/')s=s.slice(1);if(/^[0-9]{1,2}$/.test(s)){var n=+s;if(n<0||n>32)return null;return n}var v=ip2int(s);if(v===null)return null;var c=0,x=v;while(x&0x80000000){c++;x=(x<<1)>>>0}if(((0xffffffff<<(32-c))>>>0)!==v)return null;return c}
 function run(){document.getElementById('err').textContent='';var ip=ip2int(document.getElementById('ip').value);var p=parseMask(document.getElementById('mask').value);if(ip===null||p===null){document.getElementById('out').innerHTML='';document.getElementById('err').textContent='Invalid IP or mask';return}
