@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAT/ACL 配置速查 — 华为/H3C/思科 对照模板 | 网工必备</title>
+<meta name="description" content="NAT ACL 配置速查表：Easy IP/NAPT/NAT Server 三厂商对照模板、ACL 两种体系差异、只允许 SSH/禁 VLAN 互访/只放行 DNS+HTTP 高频模板、NAT 排障四步。华为 H3C 思科交换机路由器 NAT 配置一次讲清。">
+<meta name="keywords" content="NAT 配置, ACL 配置, 华为 NAT, H3C NAT, 思科 NAT, Easy IP, NAPT, NAT Server, nat outbound, ip nat inside, traffic-filter, acl 3000">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/nat-acl.html">
+<style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:40px 16px;}
+.wrap{max-width:920px;margin:0 auto;}
+h1{font-size:25px;margin:0 0 6px;}
+.sub{color:#8b949e;font-size:14px;margin-bottom:24px;}
+input{width:100%;box-sizing:border-box;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:10px 12px;font-size:15px;margin-bottom:8px;}
+input:focus{outline:none;border-color:#58a6ff;}
+.sec{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:18px;margin-bottom:14px;}
+.sec h2{font-size:16px;margin:0 0 12px;color:#79c0ff;}
+.item{margin-bottom:12px;}
+.item .lbl{font-size:13px;color:#8b949e;margin-bottom:4px;}
+pre{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;font-size:12.5px;overflow-x:auto;font-family:ui-monospace,monospace;line-height:1.65;margin:0;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>NAT / ACL 配置速查</h1>
+<div class="sub">三厂商对照模板 · 7 组高频场景 · 可直接粘贴改地址即用</div>
+<input id="q" placeholder="过滤: Easy IP / NAT Server / overload / VTY / DNS..." oninput="filt()">
+<div class="sec" data-t="NAT 基础概念速记"><h2>NAT 基础概念速记</h2><div class="item"><div class="lbl">三种 NAT 一句话</div><pre>静态 NAT: 1对1 固定映射 (内网服务器发布)
+NAPT (PAT): 多对1 端口复用 (办公网出公网最常用)
+Easy IP: 直接借用出接口地址 (中小企业最简)
+NAT Server: 内网服务器端口发布 (公网访问内网)</pre></div><div class="item"><div class="lbl">方向口诀</div><pre>inside = 内网侧接口, outside = 外网侧接口
+NAT 只在 inside→outside 方向的出流量上触发</pre></div></div>
+<div class="sec" data-t="华为 VRP NAT 配置"><h2>华为 VRP NAT 配置</h2><div class="item"><div class="lbl">Easy IP (最简出公网)</div><pre>acl number 2000
+ rule 5 permit source 192.168.10.0 0.0.0.255
+interface GigabitEthernet0/0/1  # 出接口
+ nat outbound 2000</pre></div><div class="item"><div class="lbl">NAPT 地址池</div><pre>nat address-group 1 202.100.1.10 202.100.1.12
+interface GigabitEthernet0/0/1
+ nat outbound 2000 address-group 1</pre></div><div class="item"><div class="lbl">NAT Server 端口发布</div><pre>interface GigabitEthernet0/0/1
+ nat server protocol tcp global 202.100.1.5 443 inside 192.168.20.10 443</pre></div><div class="item"><div class="lbl">验证</div><pre>display nat session all
+display nat session protocol tcp</pre></div></div>
+<div class="sec" data-t="H3C Comware NAT 配置"><h2>H3C Comware NAT 配置</h2><div class="item"><div class="lbl">Easy IP</div><pre>acl basic 2000
+ rule permit source 192.168.10.0 0.0.0.255
+interface GigabitEthernet1/0/2
+ nat outbound 2000</pre></div><div class="item"><div class="lbl">NAT Server 发布</div><pre>interface GigabitEthernet1/0/2
+ nat server protocol tcp global 202.100.1.5 443 inside 192.168.20.10 443</pre></div><div class="item"><div class="lbl">验证</div><pre>display nat session
+display nat all</pre></div></div>
+<div class="sec" data-t="思科 IOS NAT 配置"><h2>思科 IOS NAT 配置</h2><div class="item"><div class="lbl">PAT (端口复用)</div><pre>access-list 1 permit 192.168.10.0 0.0.0.255
+ip nat inside source list 1 interface GigabitEthernet0/0 overload
+interface GigabitEthernet0/0
+ ip nat outside
+interface GigabitEthernet0/1
+ ip nat inside</pre></div><div class="item"><div class="lbl">静态端口发布</div><pre>ip nat inside source static tcp 192.168.20.10 443 202.100.1.5 443</pre></div><div class="item"><div class="lbl">验证</div><pre>show ip nat translations
+show ip nat statistics
+clear ip nat translation *  # 清会话 (改完 ACL 后必做)</pre></div></div>
+<div class="sec" data-t="ACL 两种体系对比"><h2>ACL 两种体系对比</h2><div class="item"><div class="lbl">华为/H3C vs 思科</div><pre>华为/H3C: acl number 3000 (高级, 可匹配源目IP+端口) + traffic-filter
+思科: access-list / ip access-list extended + access-group
+注意: 华为 acl 默认步长 5 (rule 5, rule 10...), 思科无步长</pre></div><div class="item"><div class="lbl">命名区别</div><pre>思科: ip access-list extended WEB-ONLY
+华为/H3C: acl name WEB-ONLY advanced 3001</pre></div></div>
+<div class="sec" data-t="ACL 高频模板"><h2>ACL 高频模板</h2><div class="item"><div class="lbl">只允许管理网 SSH</div><pre>acl number 3001
+ rule 5 permit tcp source 10.10.10.0 0.0.0.255 destination any destination-port eq 22
+ rule 100 deny ip
+# 应用: user-interface vty 0 4 → acl 3001 inbound</pre></div><div class="item"><div class="lbl">禁止 VLAN 互访</div><pre>acl number 3002
+ rule 5 deny ip source 192.168.10.0 0.0.0.255 destination 192.168.20.0 0.0.0.255
+ rule 10 permit ip
+# 应用: interface vlan 10 → traffic-filter outbound acl 3002</pre></div><div class="item"><div class="lbl">只放行 DNS+HTTP 出网</div><pre>acl number 3003
+ rule 5 permit udp destination-port eq dns
+ rule 10 permit tcp destination-port eq 80
+ rule 15 permit tcp destination-port eq 443
+ rule 100 deny ip</pre></div><div class="item"><div class="lbl">NAT 调 ACL 改后不生效</div><pre>华为/H3C NAT 引用 acl 后修改 acl 规则不会重建会话 → undo nat outbound / 重配, 或 clear 对应 session</pre></div></div>
+<div class="sec" data-t="排障四步"><h2>排障四步</h2><div class="item"><div class="lbl">1 会话在吗</div><pre>display nat session all / show ip nat translations
+没有会话 → ACL 没放行 / inside outside 没标 / 路由缺失</pre></div><div class="item"><div class="lbl">2 命中计数</div><pre>display acl 3000 / show access-lists → 看 hits 有没有涨</pre></div><div class="item"><div class="lbl">3 服务器侧</div><pre>NAT Server 不通: 先内网直连服务器通不通, 再查 global 地址在出口有没有 ARP 冲突</pre></div><div class="item"><div class="lbl">4 变更后备份</div><pre>改 ACL/NAT 前先备份配置: pip install netcfg-vault → netcfg-vault backup
+https://bg8cfb.github.io/netcfg-vault/</pre></div></div>
+<p style="color:#8b949e;font-size:13px;margin-top:28px">相关：<a href="https://bg8cfb.github.io/netops-cheatsheets/command-map.html" style="color:#58a6ff">三厂商命令对照表</a> · <a href="https://bg8cfb.github.io/netops-cheatsheets/ssh-setup.html" style="color:#58a6ff">SSH 开启配置</a> · 变更前先备份：<a href="https://bg8cfb.github.io/netcfg-vault/" style="color:#58a6ff">netcfg-vault</a></p>
+</div>
+<script>
+function filt() {
+  var q = document.getElementById("q").value.trim().toLowerCase();
+  var secs = document.querySelectorAll(".sec");
+  for (var i = 0; i < secs.length; i++) {
+    var t = secs[i].textContent.toLowerCase();
+    secs[i].style.display = (!q || t.indexOf(q) >= 0) ? "" : "none";
+    if (q) {
+      var items = secs[i].querySelectorAll(".item");
+      for (var j = 0; j < items.length; j++) { items[j].style.display = items[j].textContent.toLowerCase().indexOf(q) >= 0 ? "" : "none"; }
+    } else {
+      var items2 = secs[i].querySelectorAll(".item");
+      for (var k = 0; k < items2.length; k++) { items2[k].style.display = ""; }
+    }
+  }
+}
+</script>
+</body>
+</html>
