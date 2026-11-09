@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BGP/OSPF 邻居排障速查 — Idle/ExStart/路由学不到 逐一击破 | 网工进阶</title>
+<meta name="description" content="BGP OSPF 故障排查速查表：BGP 邻居 Idle/Active 反复、Established 收不到路由、OSPF 卡 ExStart、Full 无路由、STP 根桥漂移。每个故障给三厂商诊断命令与根因清单，网工进阶必备。">
+<meta name="keywords" content="BGP 排障, OSPF 排障, BGP 邻居 Idle, OSPF ExStart, OSPF 邻居, STP 根桥漂移, 路由协议故障, 华为 BGP, H3C OSPF">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/routing-troubleshoot.html">
+<style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:40px 16px;}
+.wrap{max-width:920px;margin:0 auto;}
+h1{font-size:25px;margin:0 0 6px;}
+.sub{color:#8b949e;font-size:14px;margin-bottom:24px;}
+input{width:100%;box-sizing:border-box;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:10px 12px;font-size:15px;margin-bottom:8px;}
+input:focus{outline:none;border-color:#58a6ff;}
+.sec{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:18px;margin-bottom:14px;}
+.sec h2{font-size:16px;margin:0 0 12px;color:#79c0ff;}
+.item{margin-bottom:12px;}
+.item .lbl{font-size:13px;color:#8b949e;margin-bottom:4px;}
+pre{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;font-size:12.5px;overflow-x:auto;font-family:ui-monospace,monospace;line-height:1.65;margin:0;white-space:pre-wrap;}
+code{color:#7ee787;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>BGP / OSPF 排障速查</h1>
+<div class="sub">5 大高频故障 · 逐项根因清单 · 三厂商命令 — 按 checklist 逐条排除</div>
+<input id="q" placeholder="过滤: Idle / ExStart / MTU / next-hop / 根桥..." oninput="filt()">
+<div class="sec" data-t="BGP 邻居起不来 (Idle / Active 反复跳)"><h2>BGP 邻居起不来 (Idle / Active 反复跳)</h2><div class="item"><div class="lbl">诊断命令</div><pre>display bgp peer  # H3C/华为
+show ip bgp summary  # 思科</pre></div><div class="item"><div class="lbl">检查 1: TCP 179 通不通</div><pre>ping &lt;对端> / telnet &lt;对端> 179
+acl 只放行 179 是常见漏配点</pre></div><div class="item"><div class="lbl">检查 2: peer 地址配错</div><pre>peer 10.1.1.2 as-number 65001  # 两边 AS 必须互认</pre></div><div class="item"><div class="lbl">检查 3: 源接口不匹配</div><pre>华为: peer 10.1.1.2 connect-interface LoopBack0
+思科 ebgp 多跳: neighbor 10.1.1.2 ebgp-multihop 2</pre></div><div class="item"><div class="lbl">检查 4: 多线 eBGP</div><pre>peer 10.1.1.2 permit-asloop / local-as 配置不当</pre></div></div>
+<div class="sec" data-t="BGP 邻居 Established 但收不到路由"><h2>BGP 邻居 Established 但收不到路由</h2><div class="item"><div class="lbl">看收发统计</div><pre>display bgp peer &lt;ip> verbose  # 收到/发布的 prefix 数</pre></div><div class="item"><div class="lbl">检查 1: 路由策略过滤</div><pre>display current | include peer.*route-policy
+route-policy 里 deny 了入方向</pre></div><div class="item"><div class="lbl">检查 2: iBGP 水平分割</div><pre>iBGP 学到的路由不再传 iBGP → 需要 RR 或全互联</pre></div><div class="item"><div class="lbl">检查 3: next-hop 不可达</div><pre>iBGP 传的路由 next-hop 不变 → 对端没有 IGP 路由到 next-hop
+peer x.x.x.x next-hop-local</pre></div><div class="item"><div class="lbl">检查 4: 同步 AS_PATH</div><pre>本端 AS 在收到的 AS_PATH 里 → peer x.x.x.x permit-asloop</pre></div></div>
+<div class="sec" data-t="OSPF 邻居卡在 ExStart / Exchange"><h2>OSPF 邻居卡在 ExStart / Exchange</h2><div class="item"><div class="lbl">诊断命令</div><pre>display ospf peer  # 看 state
+show ip ospf neighbor  # 思科</pre></div><div class="item"><div class="lbl">原因 1: MTU 不一致</div><pre>接口 MTU 在 DD 报文里携带, 不一致就卡 ExStart
+华为/H3C: ospf mtu-enable 开启检测 (默认关)</pre></div><div class="item"><div class="lbl">原因 2: HELLO/DEAD 不匹配</div><pre>hello 10s dead 40s 两边必须一致
+网络类型不一致 (broadcast vs p2p) 也报这个</pre></div><div class="item"><div class="lbl">原因 3: 区域 ID/认证不匹配</div><pre>area 0 vs area 1; 认证模式/密钥不同</pre></div></div>
+<div class="sec" data-t="OSPF 邻居 Full 但路由没学到"><h2>OSPF 邻居 Full 但路由没学到</h2><div class="item"><div class="lbl">检查 1: LSU 没来</div><pre>display ospf lsdb  # 看有没有对端的 LSA</pre></div><div class="item"><div class="lbl">检查 2: 末梢区域</div><pre>stub/nssa 区域不收 5 类 LSA (外部路由)</pre></div><div class="item"><div class="lbl">检查 3: 路由过滤</div><pre>filter-policy import acl 2000  # import 方向过滤了</pre></div><div class="item"><div class="lbl">检查 4: 转发地址</div><pre>5 类 LSA 的 forwarding-address 不可达 → 路由不装表</pre></div></div>
+<div class="sec" data-t="STP 拓扑震荡 / 根桥漂移"><h2>STP 拓扑震荡 / 根桥漂移</h2><div class="item"><div class="lbl">看当前根</div><pre>display stp root  # 根桥 MAC 变了就是漂移</pre></div><div class="item"><div class="lbl">检查 1: 新接入交换机优先级更低</div><pre>新设备默认优先级 32768 带 MAC 更小 → 抢根
+防御: 主干交换机 stp priority 4096 (更小=更优先)</pre></div><div class="item"><div class="lbl">检查 2: TCN 风暴</div><pre>display stp tc  # TC 报文持续增长 → 终端口没开 edge</pre></div><div class="item"><div class="lbl">防御配置</div><pre>端口: stp edged-port enable + bpdu-drop any (华为/H3C)
+全局: stp tc-protection</pre></div></div>
+<p style="color:#8b949e;font-size:13px;margin-top:28px">相关：<a href="https://bg8cfb.github.io/netops-cheatsheets/command-map.html" style="color:#58a6ff">三厂商命令对照表</a> · <a href="https://bg8cfb.github.io/netops-cheatsheets/ports.html" style="color:#58a6ff">端口号速查</a> · 配置变更前先备份：<a href="https://bg8cfb.github.io/netcfg-vault/" style="color:#58a6ff">netcfg-vault</a></p>
+</div>
+<script>
+function filt() {
+  var q = document.getElementById("q").value.trim().toLowerCase();
+  var secs = document.querySelectorAll(".sec");
+  for (var i = 0; i < secs.length; i++) {
+    var t = secs[i].textContent.toLowerCase();
+    secs[i].style.display = (!q || t.indexOf(q) >= 0) ? "" : "none";
+    if (q) {
+      var items = secs[i].querySelectorAll(".item");
+      for (var j = 0; j < items.length; j++) { items[j].style.display = items[j].textContent.toLowerCase().indexOf(q) >= 0 ? "" : "none"; }
+    } else {
+      var items2 = secs[i].querySelectorAll(".item");
+      for (var k = 0; k < items2.length; k++) { items2[k].style.display = ""; }
+    }
+  }
+}
+</script>
+</body>
+</html>
