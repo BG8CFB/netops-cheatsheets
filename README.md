@@ -1,5 +1,7 @@
 # netops-cheatsheets
 
+> ⌨️ 在线命令对照表 (30 条): https://bg8cfb.github.io/netops-cheatsheets/command-map.html
+
 > 网络工程师随身速查：H3C / 华为 / 思科 / 锐捷 常用配置模板 + 日常巡检清单。
 > Search keywords: h3c常用配置 · 华为交换机配置模板 · 思科巡检命令 · 网络工程师速查手册 · network engineer cheatsheet
 
