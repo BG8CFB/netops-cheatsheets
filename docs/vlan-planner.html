@@ -53,7 +53,7 @@ var h="<table><tr><th>VLAN</th><th>名称</th><th>主机数</th><th>网段</th><
 rows.forEach(function(r){h+="<tr><td>"+r.vid+"</td><td>"+esc(r.name)+"</td><td>"+r.hosts+"</td><td>"+int2ip(r.net)+"/"+r.p+"</td><td>"+r.mask+"</td><td>"+int2ip(r.gw)+"</td><td>"+int2ip(r.first)+" ~ "+int2ip(r.last)+"</td></tr>"});
 h+="</table><p class=\"tip\">共 "+rows.length+" 个 VLAN，总消耗地址 "+used.toLocaleString()+" 个（起始 "+int2ip(base)+"）</p>";
 document.getElementById("out").innerHTML=h;
-var c="<h3>H3C (Comware)</h3><pre>";rows.forEach(function(r,i){c+="vlan "+r.vid+"\n name "+pinyin(r.name)+i+"\ninterface Vlan-interface"+r.vid+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
+var c="<h3>H3C (Comware)</h3><pre>";rows.forEach(function(r,i){c+="vlan "+r.vid+"\n name "+("VW-"+r.vid)+"\ninterface Vlan-interface"+r.vid+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
 c+="<h3>华为 (VRP)</h3><pre>";rows.forEach(function(r,i){c+="vlan batch "+r.vid+"\ninterface Vlanif"+r.vid+"\n description "+r.name+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
 c+="<h3>思科 (IOS)</h3><pre>";rows.forEach(function(r){c+="vlan "+r.vid+"\n name OFFICE"+r.vid+"\ninterface Vlan"+r.vid+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
 document.getElementById("cfg").innerHTML=c}
