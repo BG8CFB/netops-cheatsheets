@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交换机开启 SNMP 配置命令 — H3C / 华为 / 思科 v2c v3 完整步骤（接 Zabbix）</title>
+<meta name="description" content="H3C、华为、思科交换机 SNMP 开启完整命令：v2c 团体字、v3 用户认证加密、Zabbix 对接参数，含安全加固清单。">
+<meta name="keywords" content="交换机开启snmp,h3c snmp配置,华为snmp配置命令,思科snmp配置,zabbix监控交换机,snmp v3配置">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/snmp-setup.html">
+<style>
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.7}
+.wrap{max-width:920px;margin:0 auto;padding:48px 24px}
+h1{font-size:1.9em;background:linear-gradient(90deg,#58a6ff,#bc8cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{color:#58a6ff;border-bottom:1px solid #30363d;padding-bottom:8px;margin-top:36px}
+pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;overflow-x:auto;font-size:.88em}
+code{background:#161b22;padding:2px 6px;border-radius:4px;color:#79c0ff;font-size:.9em}
+pre code{background:none;padding:0}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{border:1px solid #30363d;padding:10px;text-align:left}
+th{background:#161b22;color:#58a6ff}
+.warn{background:#2d1b1b;border:1px solid #7d2e2e;border-radius:8px;padding:14px;margin:14px 0}
+a{color:#58a6ff}
+footer{border-top:1px solid #30363d;margin-top:48px;padding-top:20px;color:#8b949e;font-size:.9em}
+</style>
+</head>
+<body><div class="wrap">
+<h1>交换机开启 SNMP — 三厂商完整配置（v2c / v3）</h1>
+<p>H3C Comware · 华为 VRP · 思科 IOS。监控平台（Zabbix / LibreNMS / PRTG）采集交换机前必须先开 SNMP。</p>
+
+<h2>H3C（Comware V7）</h2>
+<pre><code># v2c（简单，内网可用）
+snmp-agent
+snmp-agent community read Read0nly
+snmp-agent community write Write0nly
+snmp-agent sys-info version v2c
+snmp-agent target-host trap address udp-domain 192.168.1.100 params securityname Read0nly v2c
+snmp-agent trap enable
+
+# v3（推荐：认证+加密）
+snmp-agent
+snmp-agent group v3 netops privacy read-view ViewDefault
+snmp-agent usm-user v3 monitor netops simple authentication-mode sha Auth-Pass-123 privacy-mode aes128 Enc-Pass-456
+snmp-agent trap enable</code></pre>
+
+<h2>华为（VRP）</h2>
+<pre><code># v2c
+snmp-agent
+snmp-agent community read @{%@%}Read0nly@{%@%}
+snmp-agent sys-info version v2c v3
+snmp-agent target-host trap address udp-domain 192.168.1.100 params securityname Read0nly
+snmp-agent trap enable
+
+# v3
+snmp-agent
+snmp-agent group v3 netops privacy
+snmp-agent usm-user v3 monitor netops authentication-mode sha Auth-Pass-123 privacy-mode aes128 Enc-Pass-456
+snmp-agent trap enable
+</code></pre>
+
+<h2>思科（IOS）</h2>
+<pre><code># v2c
+snmp-server community Read0nly RO
+snmp-server location IDC-Core
+snmp-server enable traps
+snmp-server host 192.168.1.100 version 2c Read0nly
+
+# v3（推荐）
+snmp-server group NETOPS v3 priv
+snmp-server user monitor NETOPS v3 auth sha Auth-Pass-123 priv aes 128 Enc-Pass-456
+snmp-server enable traps
+snmp-server host 192.168.1.100 version 3 priv monitor</code></pre>
+
+<h2>Zabbix 对接参数速查</h2>
+<table>
+<tr><th>项</th><th>v2c</th><th>v3 (authPriv)</th></tr>
+<tr><td>宏</td><td><code>{$SNMP_COMMUNITY}</code></td><td><code>{$SNMP_SECNAME}</code> / <code>{$SNMP_AUTHPASS}</code> / <code>{$SNMP_PRIVPASS}</code></td></tr>
+<tr><td>安全级别</td><td>—</td><td>authPriv（SHA + AES128）</td></tr>
+<tr><td>上下文</td><td>—</td><td>v3 无 context 除非 VRF</td></tr>
+<tr><td>验证</td><td colspan="2"><code>snmpwalk -v2c -c Read0nly IP sysUpTime</code> / <code>snmpwalk -v3 -u monitor -l authPriv -a SHA -A ... IP sysUpTime</code></td></tr>
+</table>
+
+<div class="warn"><strong>安全加固</strong>：① 永远别用 public/private 默认团体字；② 团体字别用弱字典词；③ 优先 v3 authPriv；④ 用 ACL 限定 NMS 源 IP：<br>
+H3C <code>snmp-agent community read Read0nly acl 2000</code> / 华为同式 / 思科 <code>snmp-server community Read0nly RO 10</code>（10 为标准 ACL）</div>
+
+<p>更多三厂商对照：<a href="command-map.html">30 任务命令总对照表</a> · <a href="ssh-setup.html">SSH 开启专页</a> · <a href="vlan-trunk.html">VLAN/Trunk 专页</a>。批量审计 SNMP 弱配置可用 <a href="https://bg8cfb.github.io/netcfg-vault/">netcfg-vault audit</a>。</p>
+<footer>基于 Comware V7 / VRP / IOS 15.x 整理。</footer>
+</div></body></html>
