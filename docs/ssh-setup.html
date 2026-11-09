@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交换机开启 SSH 远程登录配置命令 — H3C / 华为 / 思科 完整步骤</title>
+<meta name="description" content="H3C、华为、思科交换机 SSH 开启完整配置命令：生成本地密钥、创建管理 IP、本地用户与权限、VTY 线路设 SSH、关闭 Telnet，可整段复制。">
+<meta name="keywords" content="交换机开启ssh,h3c ssh配置,华为ssh配置命令,思科ssh配置,stelnet,ssh登录交换机,网络设备安全加固">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/ssh-setup.html">
+<style>
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.7}
+.wrap{max-width:920px;margin:0 auto;padding:48px 24px}
+h1{font-size:1.9em;background:linear-gradient(90deg,#58a6ff,#bc8cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{color:#58a6ff;border-bottom:1px solid #30363d;padding-bottom:8px;margin-top:36px}
+h3{color:#79c0ff}
+pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;overflow-x:auto;font-size:.88em}
+code{background:#161b22;padding:2px 6px;border-radius:4px;color:#79c0ff;font-size:.9em}
+pre code{background:none;padding:0}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{border:1px solid #30363d;padding:10px;text-align:left}
+th{background:#161b22;color:#58a6ff}
+.warn{background:#2d1b1b;border:1px solid #7d2e2e;border-radius:8px;padding:14px;margin:14px 0}
+.tip{background:#1b2620;border:1px solid #2e7d4f;border-radius:8px;padding:14px;margin:14px 0}
+a{color:#58a6ff}
+footer{border-top:1px solid #30363d;margin-top:48px;padding-top:20px;color:#8b949e;font-size:.9em}
+</style>
+</head>
+<body><div class="wrap">
+<h1>交换机开启 SSH 远程登录 — 三厂商完整配置</h1>
+<p>H3C Comware · 华为 VRP · 思科 IOS。每段配置可整段复制到设备，按注释理解每步作用。</p>
+
+<h2>H3C（Comware V7）</h2>
+<pre><code># 1. 生成本地密钥对（RSA + DSA）
+public-key local create rsa
+public-key local create dsa
+
+# 2. 创建管理 VLAN 的 IP（假设用 VLAN 1）
+interface Vlan-interface1
+ ip address 192.168.1.1 255.255.255.0
+ undo shutdown
+quit
+
+# 3. 开启 SSH 服务
+ssh server enable
+
+# 4. 创建本地用户（管理角色 + 密码）
+local-user admin
+ password hash Your_Str0ng_Pass!
+ service-type ssh
+ authorization-attribute user-role network-admin
+quit
+
+# 5. VTY 线路：只允许 SSH
+user-interface vty 0 4
+ authentication-mode scheme
+ protocol inbound ssh
+quit
+
+# 6.（可选）关闭 Telnet 提升安全
+undo telnet server enable
+
+# 7. 验证
+display ssh server status
+display ssh user-information</code></pre>
+
+<h2>华为（VRP）</h2>
+<pre><code># 1. 生成本地密钥对
+rsa local-key-pair create
+# （新版设备也可用）dsa local-key-pair create
+
+# 2. 管理 IP
+interface Vlanif1
+ ip address 192.168.1.1 255.255.255.0
+ undo shutdown
+quit
+
+# 3. 开启 SSH（stelnet）服务
+stelnet server enable
+ssh user admin authentication-type password
+ssh user admin service-type stelnet
+
+# 4. AAA 本地用户
+aaa
+ local-user admin password irreversible-cipher Your_Str0ng_Pass!
+ local-user admin privilege level 15
+ local-user admin service-type ssh
+quit
+
+# 5. VTY 线路
+user-interface vty 0 4
+ authentication-mode aaa
+ protocol inbound ssh
+quit
+
+# 6.（可选）关闭 Telnet
+undo telnet server enable
+
+# 7. 验证
+display ssh server status
+display ssh user-information admin</code></pre>
+
+<h2>思科（IOS）</h2>
+<pre><code># 1. 生成 RSA 密钥（同时自动开启 SSH）
+crypto key generate rsa modulus 2048
+
+# 2. 只允许 SSH v2
+ip ssh version 2
+
+# 3. 管理 IP
+interface vlan 1
+ ip address 192.168.1.1 255.255.255.0
+ no shutdown
+
+# 4. 本地用户数据库（启用加密密码）
+username admin privilege 15 secret Your_Str0ng_Pass!
+
+# 5. VTY 线路：本地认证 + 只允许 SSH
+line vty 0 4
+ login local
+ transport input ssh
+ exec-timeout 10 0
+
+# 6.（可选）关闭 Telnet
+line vty 0 4
+ transport input ssh   ! 这一行本身就等于禁 Telnet
+
+# 7. 验证
+show ip ssh
+show running-config | include ssh</code></pre>
+
+<h2>常见排错</h2>
+<table>
+<tr><th>症状</th><th>排查点</th></tr>
+<tr><td>Connection refused</td><td><code>display ssh server status</code> / <code>show ip ssh</code> 确认服务开启；检查管理 IP 可 ping</td></tr>
+<tr><td>提示密码错但密码确定对</td><td>AAA/本地用户 service-type 是否含 ssh；H3C authentication-mode scheme 是否配在 vty</td></tr>
+<tr><td>能连上立刻断开</td><td>VTY 全被占用：<code>display users</code> / <code>who</code>；配 <code>exec-timeout</code> / <code>idle-timeout</code></td></tr>
+<tr><td>SSH 客户端算法协商失败</td><td>老设备 SSH v1 与新客户端不兼容；升级或开启兼容模式</td></tr>
+</table>
+
+<div class="warn"><strong>安全提醒</strong>：① 密码避免 admin/123456 类；② 有条件上 AAA/TACACS+ 集中认证；③ ACL 限制管理源 IP；④ 关闭 Telnet 后留好 console 口作为最后通道。</div>
+
+<p>更多三厂商对照（VLAN/Trunk/STP/聚合/SNMP）：<a href="command-map.html">30 任务命令总对照表</a> · <a href="vlan-trunk.html">VLAN/Trunk 专页</a>。批量开启/审计这些配置可用开源工具 <a href="https://bg8cfb.github.io/netcfg-vault/">netcfg-vault</a>。</p>
+<footer>命令基于 Comware V7 / VRP / IOS 15.x 整理。</footer>
+</div></body></html>
