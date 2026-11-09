@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通配符掩码计算器 — ACL 反掩码/子网掩码换算在线工具</title>
+<meta name="description" content="子网掩码与通配符掩码(反掩码)在线互转, CIDR 换算, 自动生成 Cisco ACL 与华为 ACL 语句。网络工程师配置访问控制列表必备工具。">
+<meta name="keywords" content="通配符掩码,反掩码,通配符掩码计算器,wildcard mask,ACL 反掩码,子网掩码换算,Cisco ACL,华为 ACL">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/wildcard-calc.html">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.7}
+.wrap{max-width:920px;margin:0 auto;padding:40px 20px}
+h1{font-size:1.7em;margin:0 0 8px;color:#58a6ff}
+.sub{color:#8b949e;margin-bottom:24px;font-size:.95em}
+input{width:100%;box-sizing:border-box;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:11px 14px;font-family:ui-monospace,Consolas,monospace;font-size:15px}
+input:focus{outline:none;border-color:#58a6ff}
+button{background:#238636;color:#fff;border:none;border-radius:6px;padding:10px 26px;font-size:15px;font-weight:600;cursor:pointer;margin-top:14px}
+button:hover{background:#2ea043}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px 24px;margin-top:18px}
+.card h3{margin:0 0 10px;font-size:1.05em;color:#58a6ff}
+.big{font-family:ui-monospace,Consolas,monospace;font-size:1.45em;font-weight:700;color:#3fb950;word-break:break-all}
+.meta{color:#8b949e;font-size:.9em;margin-top:8px}
+.err{color:#f85149}.ok{color:#3fb950}.warn{color:#d29922}
+pre{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;overflow-x:auto;font-size:.86em;line-height:1.8;margin:0}
+code{background:#21262d;padding:1px 6px;border-radius:4px;font-family:ui-monospace,Consolas,monospace}
+a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.foot{margin-top:36px;padding-top:18px;border-top:1px solid #30363d;color:#8b949e;font-size:.88em}
+table{width:100%;border-collapse:collapse;font-size:.88em;margin-top:10px}
+td,th{border:1px solid #30363d;padding:6px 10px;text-align:left}th{background:#21262d;color:#58a6ff}
+</style></head><body><div class="wrap">
+<h1>通配符掩码计算器（反掩码 / Wildcard Mask）</h1>
+<div class="sub">子网掩码 ⇄ 通配符掩码双向换算 + CIDR + 生成 Cisco/华为 ACL 语句。网络工程师配置访问控制列表必备。</div>
+<input id="in" placeholder="输入任意一种: 255.255.255.0（子网掩码）| 0.0.0.255（通配符）| 24（CIDR）">
+<button onclick="calc()">换算</button>
+<div id="out"></div>
+<div class="card"><h3>速记规则</h3><div style="font-size:.92em">
+<p><b>通配符 = 子网掩码取反</b>：掩码位为 1（网络位）→ 通配符 0（必须精确匹配）；掩码位为 0（主机位）→ 通配符 1（任意）。</p>
+<p><code>0.0.0.255</code> 匹配一个 /24；<code>0.0.7.255</code> 匹配一个 /21；<code>0.0.0.0</code> 精确匹配单主机；<code>255.255.255.255</code> 匹配任意（any）。</p>
+<p><b>非连续通配符</b>（如 <code>0.0.1.254</code> 匹配奇偶地址）Cisco 支持但华为部分版本不支持，工具会标注。</p>
+</div></div>
+<div class="card"><h3>相关工具</h3><div style="font-size:.92em">
+<a href="./subnet-calc.html">子网计算器</a> · <a href="./ip-summarizer.html">路由汇总计算器</a> · <a href="./command-map.html">三厂商命令对照表</a> · <a href="https://bg8cfb.github.io/netcfg-vault/">netcfg-vault 配置备份</a>
+</div></div>
+<div class="foot">netops-cheatsheets · <a href="./">全部工具</a> · 交换机配置备份与巡检自动化见 <a href="https://bg8cfb.github.io/netcfg-vault/">netcfg-vault</a>（免费 5 台 / Pro ¥99）</div>
+</div><script>
+function ip2int(s){var p=s.trim().split(".");if(p.length!==4)return null;var v=0;for(var i=0;i<4;i++){if(!/^[0-9]{1,3}$/.test(p[i]))return null;var n=+p[i];if(n>255)return null;v=(v<<8)+n}return v>>>0}
+function int2ip(v){return [(v>>>24)&255,(v>>>16)&255,(v>>>8)&255,v&255].join(".")}
+function cidrOf(mask){var c=0;for(var i=31;i>=0;i--){if((mask>>>i)&1)c++;else break}return c}
+function isContig(mask){var seen0=false;for(var i=31;i>=0;i--){var b=(mask>>>i)&1;if(b===0)seen0=true;else if(seen0)return false}return true}
+function parseInput(s){s=s.trim();if(/^[0-9]{1,2}$/.test(s)){var p=+s;if(p<0||p>32)return null;var m=(0xffffffff<<(32-p))>>>0;return {mask:m,wild:(~m)>>>0,cidr:p,src:"CIDR "+p}}
+var v=ip2int(s);if(v===null)return null;
+if(isContig(v)){var cidr=cidrOf(v);return {mask:v,wild:(~v)>>>0,cidr:cidr,src:"子网掩码 "+s}}
+var w=(~v)>>>0;if(isContig(w)){var c2=32-cidrOf(w);return {mask:w,wild:v,cidr:c2,src:"通配符掩码 "+s}}
+return {mask:null,wild:v,cidr:null,src:"非连续通配符 "+s,nonContig:true}}
+function calc(){var s=document.getElementById("in").value;var out=document.getElementById("out");
+if(!s.trim()){out.innerHTML='<div class="card"><h3 class="err">请输入子网掩码、通配符掩码或 CIDR</h3></div>';return}
+var r=parseInput(s);if(!r){out.innerHTML='<div class="card"><h3 class="err">无法识别: '+s.replace(/</g,"&lt;")+'（支持 255.255.255.0 / 0.0.0.255 / 24）</h3></div>';return}
+var h="";
+if(r.nonContig){h+='<div class="card"><h3 class="warn">非连续通配符</h3><div class="big">'+int2ip(r.wild)+'</div><div class="meta">含非连续位: Cisco IOS 支持任意位通配符, 华为/H3C 部分版本只支持连续掩码取反 — 跨厂商部署请改用多条精确 ACL。</div></div>';out.innerHTML=h;return}
+h+='<div class="grid">';
+h+='<div class="card"><h3>通配符掩码（反掩码）</h3><div class="big">'+int2ip(r.wild)+'</div><div class="meta">识别为 '+r.src+'</div></div>';
+h+='<div class="card"><h3>子网掩码 / CIDR</h3><div class="big">'+int2ip(r.mask)+' = /'+r.cidr+'</div><div class="meta">主机位 '+(32-r.cidr)+' · 每网段 '+Math.pow(2,32-r.cidr).toLocaleString()+' 地址</div></div>';
+h+='</div>';
+h+='<div class="card"><h3>ACL 语句生成（以 192.168.10.0 网段为例）</h3><pre>';
+var net="192.168.10.0";
+h+='<b>Cisco IOS</b>\naccess-list 10 permit '+net+' '+int2ip(r.wild)+'\n\n<b>华为 VRP</b>\nacl number 2000\n rule 5 permit source '+net+' '+int2ip(r.mask)+'\n\n<b>H3C Comware</b>\nacl basic 2000\n rule 0 permit source '+net+' '+int2ip(r.mask)+'\n\n<b>Cisco 扩展 ACL</b>\naccess-list 100 permit ip '+net+' '+int2ip(r.wild)+' any';
+h+='</pre><div class="meta">华为/H3C ACL source 参数写<b>子网掩码</b>（正掩码），Cisco 写<b>通配符掩码</b>（反掩码）— 这是两阵营最常见的踩坑点。</div></div>';
+out.innerHTML=h}
+</script></body></html>
