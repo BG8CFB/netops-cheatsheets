@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>netops-cheatsheets — 网络工程师速查手册 (H3C/华为/思科)</title>
+<meta name="description" content="H3C 华为 思科 常用配置速查 + 30项日常巡检清单 + Excel巡检报告生成器。免费速查, Pro ¥39。">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--accent:#58a6ff;--text:#e6edf3;--mut:#8b949e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.6}
+.wrap{max-width:960px;margin:0 auto;padding:48px 24px}
+h1{font-size:2.2rem;background:linear-gradient(90deg,#58a6ff,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.tag{color:var(--mut);margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:32px 0}
+.card{background:var(--card);border:1px solid #30363d;border-radius:8px;padding:24px}
+.card h3{color:var(--accent);margin-bottom:8px;font-size:1.05rem}
+.cta{display:inline-block;background:#238636;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;margin:8px 12px 8px 0}
+.cta.ghost{background:transparent;border:1px solid #30363d}
+table{width:100%;border-collapse:collapse;margin:24px 0;font-size:.95rem}
+td,th{padding:10px 12px;border:1px solid #30363d;text-align:left}
+th{color:var(--accent)}
+.yes{color:#3fb950}.no{color:#f85149}
+a{color:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+<h1>netops-cheatsheets</h1>
+<p class="tag">H3C / 华为 / 思科 配置速查 · 日常巡检清单 · 巡检报告生成器</p>
+
+<div class="grid">
+<div class="card"><h3>⚡ 三厂商速查</h3><p>VLAN / STP / 链路聚合 / SSH / 端口安全，命令即拷即用，V5/V7、VRP、IOS 差异标注。</p></div>
+<div class="card"><h3>📋 30 项巡检清单</h3><p>环境→设备→链路→二层→三层→业务→变更，15 分钟过完不漏项。</p></div>
+<div class="card"><h3>📊 Excel 报告生成器</h3><p>填录入表，报告页公式自动汇总设备数/异常数/备份状态，直接交付领导。</p></div>
+<div class="card"><h3>🔐 配套 netcfg-vault</h3><p>批量备份全网配置 + 一键 diff 昨夜变更，巡检的自动化底座。</p></div>
+</div>
+
+<h2>Free vs Pro</h2>
+<table>
+<tr><th></th><th>Free</th><th>Pro ¥39</th></tr>
+<tr><td>三厂商速查 md</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+<tr><td>30 项巡检清单</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+<tr><td>Excel 巡检报告生成器（公式联动）</td><td class="no">—</td><td class="yes">✓</td></tr>
+<tr><td>多厂商命令对照表（同任务四家写法）</td><td class="no">—</td><td class="yes">✓</td></tr>
+<tr><td>故障处理决策树（PDF）</td><td class="no">—</td><td class="yes">✓</td></tr>
+</table>
+
+<a class="cta" href="https://github.com/BG8CFB/netops-cheatsheets">GitHub 获取 Free 版</a>
+<a class="cta ghost" href="mailto:2945362558@qq.com?subject=netops-cheatsheets%20Pro">邮件购买 Pro ¥39</a>
+<p style="color:var(--mut);font-size:.85rem;margin-top:24px">支付渠道建设中（微信/支付宝即将上线），early bird 先到先得。作者 GitHub: <a href="https://github.com/BG8CFB">BG8CFB</a></p>
+</div></body></html>
