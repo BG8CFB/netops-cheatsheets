@@ -53,7 +53,7 @@ function parseNet(s){var i=s.indexOf("/");if(i<0)return null;var ip=ip2int(s.sli
 function summarize(nets){var lo=4294967295,hi=0;for(var i=0;i<nets.length;i++){if(nets[i].net<lo)lo=nets[i].net;if(nets[i].net+nets[i].size-1>hi)hi=nets[i].net+nets[i].size-1}
 var span=hi-lo+1,p=32;while(p>0&&Math.pow(2,32-p)<span)p--;
 var net=(lo>>>(32-p))<<(32-p);var netU=net>>>0;
-return {lo:lo,hi:hi,coverP:p,coverNet:netU,exact:(netU===lo&&netU+Math.pow(2,32-p)-1===hi)}}
+var tot=0;for(var i=0;i<nets.length;i++)tot+=nets[i].size;var cs=Math.pow(2,32-p);return {lo:lo,hi:hi,coverP:p,coverNet:netU,exact:(netU===lo&&netU+cs-1===hi&&tot===cs)}}
 function calc(){var lines=document.getElementById("in").value.split("\n").map(function(x){return x.trim()}).filter(function(x){return x&&!x.startsWith("#")});
 var out=document.getElementById("out");if(!lines.length){out.innerHTML='<div class="card"><h3 class="err">请输入至少一个网段</h3></div>';return}
 var nets=[],bad=[];for(var i=0;i<lines.length;i++){var n=parseNet(lines[i]);if(n===null)bad.push(lines[i]);else nets.push(n)}
