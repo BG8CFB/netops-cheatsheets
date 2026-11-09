@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VLAN 划分向导 在线 — 按主机数自动生成子网方案和网关规划</title>
+<meta name="description" content="在线 VLAN 规划工具：输入各部门/区域主机数，自动计算每 VLAN 的掩码、网段、网关地址与可用 IP 范围，输出三厂商配置对照。适合园区网、办公网、监控网规划。">
+<meta name="keywords" content="vlan 划分,vlan 规划,子网划分,掩码计算,园区网规划,网关规划">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/vlan-planner.html">
+<style>
+body{background:#0d1117;color:#c9d1d9;font:16px/1.7 -apple-system,Segoe UI,Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:24px}
+h1{color:#58a6ff;font-size:1.5em} h2{color:#58a6ff;font-size:1.2em;margin-top:1.8em}
+input,button,textarea{background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:15px}
+input{width:200px} button{background:#238636;border-color:#2ea043;font-weight:600;cursor:pointer;margin:4px}
+textarea{width:100%;min-height:130px;font-family:Consolas,monospace;font-size:14px;line-height:1.6}
+table{border-collapse:collapse;width:100%;margin:12px 0} td,th{border:1px solid #30363d;padding:6px 10px;text-align:left;font-size:14px}
+th{background:#161b22;color:#58a6ff} tr:nth-child(even){background:#161b22}
+a{color:#58a6ff} code{background:#161b22;padding:2px 6px;border-radius:4px} pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:13.5px}
+.tip{color:#8b949e;font-size:.9em}
+</style>
+</head>
+<body>
+<h1>VLAN 划分向导</h1>
+<p>输入各部门/区域与主机数（每行一个，格式 <code>名称 主机数</code>），工具自动计算每个 VLAN 的掩码、网段、网关与可用 IP 范围，并生成三厂商配置命令。</p>
+<p><textarea id="in">办公 120
+监控 60
+访客 20
+管理 5</textarea></p>
+<p>起始网段 <input id="base" value="10.10.0.0"> <button onclick="run()">生成方案</button> <span id="err" style="color:#f85149"></span></p>
+<div id="out"></div>
+<h2>三厂商 VLAN 配置对照</h2>
+<div id="cfg"></div>
+<h2>规划建议</h2>
+<p>· 网关统一用网段第 1 个可用 IP（本表已按此生成），核心交换机做 SVI<br>· 每个 VLAN 预留约 30%~50% 增长空间：表中的掩码已自动向上取整一档（如 60 台 → /26 而非 /26 精确值）<br>· 管理 VLAN 建议独立且最小化（/29 起步），开启 ACL 白名单<br>· 监控网段与办公物理隔离或 ACL 限制，摄像头网关指向监控核心<br>· 变更前先备份配置：<a href="https://github.com/BG8CFB/netcfg-vault">netcfg-vault</a>（免费开源）</p>
+<h2>相关工具</h2>
+<p><a href="subnet-calc.html">子网计算器</a> · <a href="vlan-trunk.html">VLAN/Trunk 配置对照</a> · <a href="command-map.html">三厂商命令对照表</a> · <a href="https://bg8cfb.github.io/netcfg-vault/config-audit.html">配置安全检查</a></p>
+<script>
+function ip2int(s){var p=s.trim().split(".");if(p.length!==4)return null;var v=0;for(var i=0;i<4;i++){var n=+p[i];if(isNaN(n)||n<0||n>255||!/^[0-9]{1,3}$/.test(p[i]))return null;v=(v<<8)+n}return v>>>0}
+function int2ip(v){return [(v>>>24)&255,(v>>>16)&255,(v>>>8)&255,v&255].join(".")}
+function hostsToPrefix(n){var need=Math.max(n+2,4);var p=32;while(Math.pow(2,32-p)<need)p--;if(p<8)p=8;return p}
+function maskOf(p){return (0xffffffff<<(32-p))>>>0}
+function run(){
+var err=document.getElementById("err");err.textContent="";
+var base=ip2int(document.getElementById("base").value);if(base===null){err.textContent="起始网段格式错误";return}
+var lines=document.getElementById("in").value.split("\n").map(function(l){return l.trim()}).filter(Boolean);
+var rows=[],cur=base,used=0;
+for(var i=0;i<lines.length;i++){var parts=lines[i].split(/[ \t]+/);if(parts.length<2){err.textContent="第"+(i+1)+"行格式错误，应为：名称 主机数";return}
+var n=parseInt(parts[1],10);if(isNaN(n)||n<1||n>16000000){err.textContent="第"+(i+1)+"行主机数无效";return}
+var p=hostsToPrefix(n),size=Math.pow(2,32-p),gw=cur+1,last=cur+size-2;
+rows.push({name:parts[0],hosts:n,vid:(i+1)*10,p:p,net:cur,gw:gw,first:cur+1,last:last,bc:cur+size-1,mask:int2ip(maskOf(p))});
+cur=cur+size;used+=size}
+var h="<table><tr><th>VLAN</th><th>名称</th><th>主机数</th><th>网段</th><th>掩码</th><th>网关</th><th>可用 IP 范围</th></tr>";
+rows.forEach(function(r){h+="<tr><td>"+r.vid+"</td><td>"+esc(r.name)+"</td><td>"+r.hosts+"</td><td>"+int2ip(r.net)+"/"+r.p+"</td><td>"+r.mask+"</td><td>"+int2ip(r.gw)+"</td><td>"+int2ip(r.first)+" ~ "+int2ip(r.last)+"</td></tr>"});
+h+="</table><p class=\"tip\">共 "+rows.length+" 个 VLAN，总消耗地址 "+used.toLocaleString()+" 个（起始 "+int2ip(base)+"）</p>";
+document.getElementById("out").innerHTML=h;
+var c="<h3>H3C (Comware)</h3><pre>";rows.forEach(function(r,i){c+="vlan "+r.vid+"\n name "+pinyin(r.name)+i+"\ninterface Vlan-interface"+r.vid+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
+c+="<h3>华为 (VRP)</h3><pre>";rows.forEach(function(r,i){c+="vlan batch "+r.vid+"\ninterface Vlanif"+r.vid+"\n description "+r.name+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
+c+="<h3>思科 (IOS)</h3><pre>";rows.forEach(function(r){c+="vlan "+r.vid+"\n name OFFICE"+r.vid+"\ninterface Vlan"+r.vid+"\n ip address "+int2ip(r.gw)+" "+r.mask+"\n"});c+="</pre>";
+document.getElementById("cfg").innerHTML=c}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function pinyin(s){return "VLAN"}
+run();
+</script>
+</body>
+</html>
