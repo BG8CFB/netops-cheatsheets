@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>路由汇总计算器 — 多网段合并超网 CIDR 在线工具</title>
+<meta name="description" content="输入多个 CIDR 网段, 在线计算最小覆盖超网(路由汇总/supernetting)。ACL 网段合并、路由聚合、防环路汇总一键完成, 支持空洞检测。">
+<meta name="keywords" content="路由汇总,超网计算,supernet,CIDR汇总,网段合并,ACL汇总,路由聚合,IP汇总计算器">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/ip-summarizer.html">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.7}
+.wrap{max-width:920px;margin:0 auto;padding:40px 20px}
+h1{font-size:1.7em;margin:0 0 8px;color:#58a6ff}
+.sub{color:#8b949e;margin-bottom:28px;font-size:.95em}
+textarea{width:100%;box-sizing:border-box;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:12px 14px;font-family:ui-monospace,Consolas,monospace;font-size:14px;min-height:130px;resize:vertical}
+textarea:focus{outline:none;border-color:#58a6ff}
+button{background:#238636;color:#fff;border:none;border-radius:6px;padding:10px 26px;font-size:15px;font-weight:600;cursor:pointer;margin-top:14px}
+button:hover{background:#2ea043}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px 24px;margin-top:18px}
+.card h3{margin:0 0 10px;font-size:1.05em;color:#58a6ff}
+.big{font-family:ui-monospace,Consolas,monospace;font-size:1.5em;font-weight:700;color:#3fb950;word-break:break-all}
+.meta{color:#8b949e;font-size:.9em;margin-top:8px}
+.warn{color:#d29922}.ok{color:#3fb950}.err{color:#f85149}
+table{width:100%;border-collapse:collapse;font-size:.88em;margin-top:10px}
+td,th{border:1px solid #30363d;padding:6px 10px;text-align:left}
+th{background:#21262d;color:#58a6ff}
+code{background:#21262d;padding:1px 6px;border-radius:4px;font-family:ui-monospace,Consolas,monospace}
+a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.foot{margin-top:36px;padding-top:18px;border-top:1px solid #30363d;color:#8b949e;font-size:.88em}
+</style>
+</head>
+<body><div class="wrap">
+<h1>路由汇总计算器（超网 / Supernet）</h1>
+<div class="sub">输入多个 CIDR 网段，自动计算最小覆盖超网。适用于路由聚合、ACL 网段合并、防火墙对象组精简。地址空洞自动检测。</div>
+<textarea id="in" placeholder="每行一个网段，例如：&#10;192.168.0.0/24&#10;192.168.1.0/24&#10;192.168.2.0/24&#10;192.168.3.0/24"></textarea>
+<button onclick="calc()">计算汇总</button>
+<div id="out"></div>
+<div class="card"><h3>典型场景</h3><div style="font-size:.92em">
+<p><b>精确汇总</b>：4 个连续 /24 → 1 条 /22 路由，路由表与 ACL 条目直接减 3/4。</p>
+<p><b>空洞汇总</b>：网段之间有未用地址块时，汇总网段会包含空洞——ACL 场景可能放行多余流量，需要按提示拆分成多条精确前缀。</p>
+<p><b>对齐失败</b>：起点不在 2 的幂边界（如 192.168.1.0 起的 2 个 /24）无法精确汇总为 /23，工具会给出最近的对齐超网并标注。</p>
+</div></div>
+<div class="card"><h3>相关工具</h3><div style="font-size:.92em">
+<a href="./subnet-calc.html">子网计算器</a> · <a href="./vlan-planner.html">VLAN 规划器</a> · <a href="./command-map.html">三厂商命令对照表</a> · <a href="https://bg8cfb.github.io/netcfg-vault/">netcfg-vault 配置备份工具</a>
+</div></div>
+<div class="foot">netops-cheatsheets · <a href="./">全部工具</a> · 交换机配置备份与巡检自动化见 <a href="https://bg8cfb.github.io/netcfg-vault/">netcfg-vault</a>（免费 5 台 / Pro ¥99）</div>
+</div><script>
+function ip2int(s){var p=s.trim().split(".");if(p.length!==4)return null;var v=0;for(var i=0;i<4;i++){if(!/^[0-9]{1,3}$/.test(p[i]))return null;var n=+p[i];if(n>255)return null;v=(v<<8)+n}return v>>>0}
+function int2ip(v){return [(v>>>24)&255,(v>>>16)&255,(v>>>8)&255,v&255].join(".")}
+function parseNet(s){var i=s.indexOf("/");if(i<0)return null;var ip=ip2int(s.slice(0,i)),p=parseInt(s.slice(i+1),10);if(ip===null||isNaN(p)||p<0||p>32)return null;var mask=(0xffffffff<<(32-p))>>>0;return {net:(ip&mask)>>>0,p:p,size:Math.pow(2,32-p)}}
+function summarize(nets){var lo=4294967295,hi=0;for(var i=0;i<nets.length;i++){if(nets[i].net<lo)lo=nets[i].net;if(nets[i].net+nets[i].size-1>hi)hi=nets[i].net+nets[i].size-1}
+var span=hi-lo+1,p=32;while(p>0&&Math.pow(2,32-p)<span)p--;
+var net=(lo>>>(32-p))<<(32-p);var netU=net>>>0;
+return {lo:lo,hi:hi,coverP:p,coverNet:netU,exact:(netU===lo&&netU+Math.pow(2,32-p)-1===hi)}}
+function calc(){var lines=document.getElementById("in").value.split("\n").map(function(x){return x.trim()}).filter(function(x){return x&&!x.startsWith("#")});
+var out=document.getElementById("out");if(!lines.length){out.innerHTML='<div class="card"><h3 class="err">请输入至少一个网段</h3></div>';return}
+var nets=[],bad=[];for(var i=0;i<lines.length;i++){var n=parseNet(lines[i]);if(n===null)bad.push(lines[i]);else nets.push(n)}
+if(bad.length){out.innerHTML='<div class="card"><h3 class="err">无法解析: '+bad.join(", ")+'（格式: 10.0.0.0/24）</h3></div>';return}
+var r=summarize(nets);var total=0;for(var i=0;i<nets.length;i++)total+=nets[i].size;
+var covSize=Math.pow(2,32-r.coverP);var hasGap=total<covSize;
+var h='<div class="grid">';
+h+='<div class="card"><h3>汇总超网</h3><div class="big">'+int2ip(r.coverNet)+'/'+r.coverP+'</div>';
+h+='<div class="meta">掩码 '+int2ip((0xffffffff<<(32-r.coverP))>>>0)+' · 覆盖 '+covSize.toLocaleString()+' 地址</div></div>';
+h+='<div class="card"><h3>判定</h3><div class="big '+(r.exact?"ok":"warn")+'">'+(r.exact?"精确汇总":(hasGap?"含空洞":"起点未对齐"))+'</div>';
+h+='<div class="meta">'+(r.exact?"网段连续且对齐，可安全替换为单条前缀":(hasGap?"覆盖地址 "+covSize.toLocaleString()+" > 输入合计 "+total.toLocaleString()+"，ACL 会放行空洞流量":"汇总需向下对齐到边界，含未输入网段"))+'</div></div>';
+h+='</div>';
+h+='<div class="card"><h3>明细（'+nets.length+' 条输入）</h3><table><tr><th>网段</th><th>范围</th><th>地址数</th></tr>';
+for(var i=0;i<nets.length;i++)h+='<tr><td><code>'+int2ip(nets[i].net)+'/'+nets[i].p+'</code></td><td>'+int2ip(nets[i].net)+' – '+int2ip(nets[i].net+nets[i].size-1)+'</td><td>'+nets[i].size.toLocaleString()+'</td></tr>';
+h+='</table></div>';
+if(!r.exact&&hasGap){h+='<div class="card"><h3 class="warn">建议拆分</h3><div style="font-size:.92em">若需精确匹配不含空洞，请按边界拆为多条前缀分别下发；本表仅给出最小覆盖超网。</div></div>'}
+out.innerHTML=h}
+</script></body></html>
