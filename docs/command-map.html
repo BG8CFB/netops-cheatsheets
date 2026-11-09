@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>H3C 华为 思科 命令对照表 (在线速查 30 条) — 网络工程师必备</title>
+<meta name="description" content="H3C Comware / 华为 VRP / 思科 IOS 常用命令在线对照表: VLAN、Trunk、SSH、SNMP、NTP、STP、链路聚合、端口安全、备份等 30 个高频任务, 支持关键词过滤, 复制即用。">
+<meta name="keywords" content="h3c 华为 思科 命令对照表,交换机命令对照,h3c命令,华为交换机命令,cisco命令,网络工程师速查,comware vrp ios">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/command-map.html">
+<style>
+body{background:#0d1117;color:#c9d1d9;font-family:system-ui,"Microsoft YaHei",sans-serif;margin:0;padding:24px 16px}
+.wrap{max-width:1200px;margin:0 auto}
+h1{color:#58a6ff;font-size:1.5em}
+input{width:100%;box-sizing:border-box;padding:12px 14px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#c9d1d9;font-size:1em;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:0.88em}
+th{position:sticky;top:0;background:#161b22;color:#79c0ed;text-align:left;padding:10px;border-bottom:2px solid #30363d;cursor:pointer}
+td{padding:10px;border-bottom:1px solid #21262d;vertical-align:top}
+td:first-child{color:#ffa657;white-space:nowrap;font-weight:600}
+code{color:#7ee787;font-family:Consolas,monospace;font-size:0.95em}
+.cta{background:#1f6feb33;border:1px solid #1f6feb;border-radius:8px;padding:14px 18px;margin:18px 0}
+a{color:#58a6ff}
+small{color:#8b949e}
+</style>
+</head>
+<body><div class="wrap">
+<h1>H3C / 华为 / 思科 命令对照表</h1>
+<p>30 个高频任务 × 三厂商命令, 输入关键词实时过滤 (如: vlan / ssh / stp / 备份)。</p>
+<input id="q" placeholder="🔍 过滤: vlan, trunk, ssh, stp, 聚合, 备份, snmp..." autofocus>
+<table id="t">
+<thead><tr><th>任务</th><th>H3C (Comware)</th><th>华为 (VRP)</th><th>思科 (IOS)</th></tr></thead>
+<tbody>
+  <tr><td>查看当前配置</td><td>display current-configuration</td><td>display current-configuration</td><td>show running-config</td></tr>
+  <tr><td>保存配置</td><td>save</td><td>save</td><td>write memory</td></tr>
+  <tr><td>查看版本/型号</td><td>display version</td><td>display version</td><td>show version</td></tr>
+  <tr><td>查看 VLAN 列表</td><td>display vlan</td><td>display vlan</td><td>show vlan brief</td></tr>
+  <tr><td>创建 VLAN</td><td>vlan 10</td><td>vlan batch 10</td><td>vlan 10</td></tr>
+  <tr><td>接入端口划 VLAN</td><td>port access vlan 10</td><td>port default vlan 10</td><td>switchport access vlan 10</td></tr>
+  <tr><td>配置 Trunk</td><td>port link-type trunk<br>port trunk permit vlan all</td><td>port link-type trunk<br>port trunk allow-pass vlan all</td><td>switchport mode trunk<br>switchport trunk allowed vlan all</td></tr>
+  <tr><td>查看 MAC 地址表</td><td>display mac-address</td><td>display mac-address</td><td>show mac address-table</td></tr>
+  <tr><td>查看 ARP 表</td><td>display arp</td><td>display arp all</td><td>show ip arp</td></tr>
+  <tr><td>查看接口状态(简)</td><td>display interface brief</td><td>display interface brief</td><td>show ip interface brief</td></tr>
+  <tr><td>查看接口详细(错包/CRC)</td><td>display interface GigabitEthernet1/0/1</td><td>display interface GigabitEthernet0/0/1</td><td>show interfaces gigabitEthernet0/1</td></tr>
+  <tr><td>端口描述</td><td>description To-Core</td><td>description To-Core</td><td>description To-Core</td></tr>
+  <tr><td>开启 SSH 登录</td><td>ssh server enable<br>user-interface vty 0 4<br>authentication-mode scheme</td><td>stelnet server enable<br>user-interface vty 0 4<br>authentication-mode aaa</td><td>ip domain-name x.com<br>crypto key generate rsa<br>line vty 0 4<br>transport input ssh<br>login local</td></tr>
+  <tr><td>创建本地用户</td><td>local-user admin<br>class manage<br>password simple P@ss<br>service-type ssh</td><td>aaa<br>local-user admin password cipher P@ss<br>local-user admin service-type ssh</td><td>username admin secret P@ss</td></tr>
+  <tr><td>查看 CPU/内存</td><td>display cpu-usage<br>display memory</td><td>display cpu-usage<br>display memory-usage</td><td>show processes cpu sorted<br>show memory statistics</td></tr>
+  <tr><td>查看日志</td><td>display logbuffer</td><td>display logbuffer</td><td>show logging</td></tr>
+  <tr><td>配置 SNMP</td><td>snmp-agent<br>snmp-agent community read public</td><td>snmp-agent<br>snmp-agent community read public</td><td>snmp-server community public RO</td></tr>
+  <tr><td>配置 NTP</td><td>ntp-service unicast-server 10.1.1.1</td><td>ntp-service unicast-server 10.1.1.1</td><td>ntp server 10.1.1.1</td></tr>
+  <tr><td>查看 STP 状态</td><td>display stp brief</td><td>display stp brief</td><td>show spanning-tree summary</td></tr>
+  <tr><td>查看 STP 根桥</td><td>display stp root</td><td>display stp root</td><td>show spanning-tree root</td></tr>
+  <tr><td>链路聚合(手工)</td><td>interface Bridge-Aggregation 1<br>link-aggregation mode dynamic</td><td>interface Eth-Trunk 1<br>mode lacp</td><td>interface Port-channel 1<br>channel-group 1 mode active</td></tr>
+  <tr><td>查看聚合口状态</td><td>display link-aggregation summary</td><td>display eth-trunk</td><td>show etherchannel summary</td></tr>
+  <tr><td>端口安全(绑 MAC)</td><td>port-security enable<br>port-security max-mac-count 1</td><td>port-security enable<br>port-security max-mac-num 1</td><td>switchport port-security<br>switchport port-security maximum 1</td></tr>
+  <tr><td>重启设备</td><td>reboot</td><td>reboot</td><td>reload</td></tr>
+  <tr><td>查看路由表</td><td>display ip routing-table</td><td>display ip routing-table</td><td>show ip route</td></tr>
+  <tr><td>配置默认路由</td><td>ip route-static 0.0.0.0 0 10.1.1.254</td><td>ip route-static 0.0.0.0 0 10.1.1.254</td><td>ip route 0.0.0.0 0.0.0.0 10.1.1.254</td></tr>
+  <tr><td>DHCP 服务(接口)</td><td>dhcp enable</td><td>dhcp enable</td><td>service dhcp (IOS)</td></tr>
+  <tr><td>查看设备告警</td><td>display alarm</td><td>display alarm</td><td>show facility-alarm status</td></tr>
+  <tr><td>配置 syslog 服务器</td><td>info-center loghost 10.1.1.10</td><td>info-center loghost 10.1.1.10</td><td>logging host 10.1.1.10</td></tr>
+  <tr><td>备份配置到 TFTP</td><td>backup startup-configuration to 10.1.1.10 cfg.cfg</td><td>backup startup-configuration to 10.1.1.10 cfg.cfg</td><td>copy startup-config tftp:</td></tr>
+</tbody></table>
+<div class="cta">📦 <b>Pro 完整版 ¥39</b>: 21 大任务全量对照 Excel (可筛选/可打印/版本差异速记) + 排障决策树 PDF + 巡检报告生成器。<a href="https://github.com/BG8CFB/netops-cheatsheets">查看详情</a> · 购买: 2945362558@qq.com</div>
+<p><a href="https://bg8cfb.github.io/netops-cheatsheets/">← 返回速查手册主页</a> · <a href="https://bg8cfb.github.io/netcfg-vault/tutorial.html">配置自动备份教程</a></p>
+<small>© 2026 BG8CFB · 命令以主流版本为准, 使用前请结合设备版本验证</small>
+</div>
+<script>
+var q=document.getElementById('q'),rows=[].slice.call(document.querySelectorAll('#t tbody tr'));
+q.addEventListener('input',function(){var v=this.value.toLowerCase();rows.forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(v)>-1?'':'none'});});
+</script>
+</body></html>
