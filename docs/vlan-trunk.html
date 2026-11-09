@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLAN 和 Trunk 配置命令对照 — H3C / 华为 / 思科 交换机</title>
+<meta name="description" content="H3C、华为、思科交换机 VLAN 划分与 Trunk 口配置命令对照表：创建 VLAN、access/trunk 模式、放行 VLAN、链路聚合，附完整可复制命令与常见错误。">
+<meta name="keywords" content="vlan配置命令,h3c vlan配置,华为vlan配置,思科vlan配置,trunk口配置,交换机vlan划分,access trunk 命令,网络工程师">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/vlan-trunk.html">
+<style>
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.7}
+.wrap{max-width:960px;margin:0 auto;padding:48px 24px}
+h1{font-size:1.9em;background:linear-gradient(90deg,#58a6ff,#bc8cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{color:#58a6ff;border-bottom:1px solid #30363d;padding-bottom:8px;margin-top:36px}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{border:1px solid #30363d;padding:10px;text-align:left;vertical-align:top}
+th{background:#161b22;color:#58a6ff;white-space:nowrap}
+td code,p code,li code{background:#161b22;padding:2px 6px;border-radius:4px;color:#79c0ff;font-size:.9em}
+pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;overflow-x:auto;font-size:.88em}
+.filter{width:100%;box-sizing:border-box;padding:12px 16px;font-size:1em;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;margin:12px 0}
+.warn{background:#2d1b1b;border:1px solid #7d2e2e;border-radius:8px;padding:14px;margin:14px 0}
+.tip{background:#1b2620;border:1px solid #2e7d4f;border-radius:8px;padding:14px;margin:14px 0}
+a{color:#58a6ff}
+footer{border-top:1px solid #30363d;margin-top:48px;padding-top:20px;color:#8b949e;font-size:.9em}
+tr.hide{display:none}
+</style>
+</head>
+<body><div class="wrap">
+<h1>VLAN / Trunk 配置命令对照表</h1>
+<p>H3C Comware · 华为 VRP · 思科 IOS —— 按任务对照，命令可直接复制。<input class="filter" id="f" placeholder="输入任务关键词过滤，如：trunk、放行、删除" oninput="filter()"></p>
+
+<h2>基础 VLAN 操作</h2>
+<table id="t1">
+<tr><th>任务</th><th>H3C (Comware)</th><th>华为 (VRP)</th><th>思科 (IOS)</th></tr>
+<tr><td>创建 VLAN</td><td><code>vlan 10</code></td><td><code>vlan batch 10</code> 或 <code>vlan 10</code></td><td><code>vlan 10</code></td></tr>
+<tr><td>批量创建</td><td><code>vlan 10 to 20</code></td><td><code>vlan batch 10 to 20</code></td><td><code>vlan 10,20,30</code></td></tr>
+<tr><td>VLAN 命名</td><td><code>name office</code></td><td><code>name office</code></td><td><code>name office</code></td></tr>
+<tr><td>查看 VLAN</td><td><code>display vlan</code></td><td><code>display vlan</code></td><td><code>show vlan brief</code></td></tr>
+<tr><td>删除 VLAN</td><td><code>undo vlan 10</code></td><td><code>undo vlan 10</code></td><td><code>no vlan 10</code></td></tr>
+<tr><td>查看 VLAN 接口</td><td><code>display vlan 10</code></td><td><code>display vlan 10</code></td><td><code>show vlan id 10</code></td></tr>
+</table>
+
+<h2>Access 接口（接 PC）</h2>
+<table id="t2">
+<tr><th>任务</th><th>H3C</th><th>华为</th><th>思科</th></tr>
+<tr><td>设为 access</td><td><code>port link-type access</code></td><td><code>port link-type access</code></td><td><code>switchport mode access</code></td></tr>
+<tr><td>划入 VLAN</td><td><code>port access vlan 10</code></td><td><code>port default vlan 10</code></td><td><code>switchport access vlan 10</code></td></tr>
+<tr><td>恢复默认</td><td><code>undo port access vlan</code></td><td><code>undo port default vlan</code></td><td><code>no switchport access vlan</code></td></tr>
+</table>
+
+<h2>Trunk 接口（交换机互联）</h2>
+<table id="t3">
+<tr><th>任务</th><th>H3C</th><th>华为</th><th>思科</th></tr>
+<tr><td>设为 trunk</td><td><code>port link-type trunk</code></td><td><code>port link-type trunk</code></td><td><code>switchport mode trunk</code></td></tr>
+<tr><td>放行 VLAN</td><td><code>port trunk permit vlan 10 20</code></td><td><code>port trunk allow-pass vlan 10 20</code></td><td><code>switchport trunk allowed vlan 10,20</code></td></tr>
+<tr><td>放行全部</td><td><code>port trunk permit vlan all</code></td><td><code>port trunk allow-pass vlan all</code></td><td><code>switchport trunk allowed vlan all</code></td></tr>
+<tr><td>改本征 VLAN</td><td><code>port trunk pvid vlan 99</code></td><td><code>port trunk pvid vlan 99</code></td><td><code>switchport trunk native vlan 99</code></td></tr>
+<tr><td>追加放行</td><td><code>port trunk permit vlan 30</code></td><td><code>port trunk allow-pass vlan 30</code></td><td><code>switchport trunk allowed vlan add 30</code></td></tr>
+<tr><td>移除 VLAN</td><td><code>undo port trunk permit vlan 30</code></td><td><code>undo port trunk allow-pass vlan 30</code></td><code>switchport trunk allowed vlan remove 30</code></td></tr>
+<tr><td>查 trunk 状态</td><td><code>display interface GigabitEthernet1/0/24</code></td><td><code>display port vlan</code></td><td><code>show interfaces trunk</code></td></tr>
+</table>
+
+<h2>SVI / VLAN 网关（三层）</h2>
+<table id="t4">
+<tr><th>任务</th><th>H3C</th><th>华为</th><th>思科</th></tr>
+<tr><td>创建网关接口</td><td><code>interface Vlan-interface10</code></td><td><code>interface Vlanif10</code></td><td><code>interface vlan 10</code></td></tr>
+<tr><td>配 IP</td><td><code>ip address 192.168.10.1 24</code></td><td><code>ip address 192.168.10.1 24</code></td><td><code>ip address 192.168.10.1 255.255.255.0</code></td></tr>
+<tr><td>启用接口</td><td><code>undo shutdown</code></td><td><code>undo shutdown</code></td><td><code>no shutdown</code></td></tr>
+</table>
+
+<h2>完整示例：单臂互联两台交换机</h2>
+<pre>
+# H3C 接入交换机
+vlan 10
+vlan 20
+interface GigabitEthernet1/0/1
+ port link-type access
+ port access vlan 10
+interface GigabitEthernet1/0/24
+ port link-type trunk
+ port trunk permit vlan 10 20
+
+# 华为核心交换机
+vlan batch 10 20
+interface Vlanif10
+ ip address 192.168.10.1 255.255.255.0
+interface GigabitEthernet0/0/1
+ port link-type trunk
+ port trunk allow-pass vlan 10 20
+
+# 思科核心交换机
+vlan 10
+vlan 20
+interface vlan 10
+ ip address 192.168.10.1 255.255.255.0
+ no shutdown
+interface GigabitEthernet1/0/1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20
+</pre>
+
+<div class="warn"><strong>常见错误</strong>：① 思科先配 trunk 模式前需 <code>switchport trunk encapsulation dot1q</code>（老设备）；② 两端 native/pvid VLAN 不一致会产生跨 VLAN 泄漏；③ 华为 <code>port default vlan</code> 只对 access 口生效；④ H3C trunk 默认只放行 VLAN 1，忘记 permit 是通病。</div>
+<div class="tip"><strong>排查顺序</strong>：PC ping 网关 → <code>display mac-address</code> / <code>show mac address-table</code> 看 MAC 学到没有 → 查 access VLAN 归属 → 查 trunk 放行列表 → 查网关 SVI 状态。</div>
+
+<h2>更多</h2>
+<p>30 任务全量对照（含 STP、链路聚合、SSH、SNMP、堆叠）见 <a href="https://bg8cfb.github.io/netops-cheatsheets/command-map.html">三厂商命令总对照表</a>；PDF/Excel 离线版与故障决策树见 <a href="https://bg8cfb.github.io/netops-cheatsheets/">netops-cheatsheets 主页（Pro ¥39）</a>。</p>
+<footer>命令基于 Comware V7 / VRP / IOS 15.x 主流版本整理。整理：netops-cheatsheets</footer>
+</div>
+<script>
+function filter(){var q=document.getElementById('f').value.toLowerCase();document.querySelectorAll('table tr').forEach(function(r){if(r.querySelector('th'))return;var t=r.innerText.toLowerCase();r.className=t.indexOf(q)>=0?'':'hide';});}
+</script>
+</body></html>
