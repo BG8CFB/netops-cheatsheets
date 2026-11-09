@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>常用网络端口号速查表 — TCP/UDP 40+ 端口大全 | 网工必备</title>
+<meta name="description" content="最全常用网络端口号速查表：SSH 22 / Telnet 23 / SNMP 161 / Syslog 514 / HTTPS 443 / RDP 3389 / MySQL 3306 等 40+ 端口，含协议类型、用途说明、安全建议，附三厂商过滤命令，支持关键词实时过滤。">
+<meta name="keywords" content="端口号, 常用端口, 网络端口, TCP UDP 端口, SSH 22 端口, SNMP 161, 端口速查表, 网工必备">
+<link rel="canonical" href="https://bg8cfb.github.io/netops-cheatsheets/ports.html">
+<style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:40px 16px;}
+.wrap{max-width:960px;margin:0 auto;}
+h1{font-size:26px;margin:0 0 6px;}
+.sub{color:#8b949e;font-size:14px;margin-bottom:24px;}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;margin-bottom:16px;}
+input{width:100%;box-sizing:border-box;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:10px 12px;font-size:15px;}
+input:focus{outline:none;border-color:#58a6ff;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:16px;}
+th,td{border:1px solid #30363d;padding:7px 10px;text-align:left;}
+th{background:#161b22;color:#8b949e;position:sticky;top:0;cursor:pointer;}
+tr:hover td{background:#161b2288;}
+.mono{font-family:ui-monospace,monospace;color:#79c0ff;}
+.danger{color:#f85149;}
+h2{font-size:17px;margin:28px 0 10px;}
+pre{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;font-size:13px;overflow-x:auto;font-family:ui-monospace,monospace;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>常用网络端口号速查表</h1>
+<div class="sub">40+ 高频端口 · 协议/用途/安全建议 · 实时过滤 — 网工排障与加固必备</div>
+<div class="box">
+<input id="q" placeholder="过滤: 端口号 / 服务名 / 用途 (如 161, ssh, 邮件, 高危)" oninput="filt()">
+<table id="tbl">
+<thead><tr><th>端口</th><th>服务</th><th>协议</th><th>用途</th><th>说明/建议</th></tr></thead>
+<tbody id="tb">
+<tr><td class='mono'>20</td><td>FTP-DATA</td><td>TCP</td><td>文件传输(数据)</td><td>旧文件服务器</td></tr>
+<tr><td class='mono'>21</td><td>FTP</td><td>TCP</td><td>文件传输(控制)</td><td>旧文件服务器; 尽量换 SFTP</td></tr>
+<tr><td class='mono'>22</td><td>SSH/SFTP</td><td>TCP</td><td>加密远程登录/文件</td><td>设备管理首选</td></tr>
+<tr><td class='mono'>23</td><td>Telnet</td><td>TCP</td><td>明文远程登录</td><td>高危! 建议关闭</td></tr>
+<tr><td class='mono'>25</td><td>SMTP</td><td>TCP</td><td>邮件发送</td><td>邮件服务器</td></tr>
+<tr><td class='mono'>53</td><td>DNS</td><td>TCP/UDP</td><td>域名解析</td><td>DNS 服务器; UDP 为主</td></tr>
+<tr><td class='mono'>67/68</td><td>DHCP</td><td>UDP</td><td>自动分配 IP</td><td>DHCP 服务器/中继</td></tr>
+<tr><td class='mono'>69</td><td>TFTP</td><td>UDP</td><td>简单文件传输</td><td>交换机升级固件</td></tr>
+<tr><td class='mono'>80</td><td>HTTP</td><td>TCP</td><td>Web 明文</td><td>管理页; 建议 443</td></tr>
+<tr><td class='mono'>110</td><td>POP3</td><td>TCP</td><td>邮件收取</td><td>明文, 用 995</td></tr>
+<tr><td class='mono'>123</td><td>NTP</td><td>UDP</td><td>时间同步</td><td>全网时钟源</td></tr>
+<tr><td class='mono'>135</td><td>RPC</td><td>TCP</td><td>Windows 远程过程调用</td><td>内网 Windows</td></tr>
+<tr><td class='mono'>137-139</td><td>NetBIOS</td><td>TCP/UDP</td><td>Windows 网上邻居</td><td>内网共享</td></tr>
+<tr><td class='mono'>143</td><td>IMAP</td><td>TCP</td><td>邮件收取</td><td>明文, 用 993</td></tr>
+<tr><td class='mono'>161/162</td><td>SNMP</td><td>UDP</td><td>网络设备监控/Trap</td><td>Zabbix/监控平台</td></tr>
+<tr><td class='mono'>389</td><td>LDAP</td><td>TCP</td><td>目录服务</td><td>AD 域</td></tr>
+<tr><td class='mono'>443</td><td>HTTPS</td><td>TCP</td><td>Web 加密</td><td>管理页安全首选</td></tr>
+<tr><td class='mono'>445</td><td>SMB</td><td>TCP</td><td>Windows 文件共享</td><td>内网共享; 高危暴露公网</td></tr>
+<tr><td class='mono'>465</td><td>SMTPS</td><td>TCP</td><td>邮件发送加密</td><td>邮件服务器</td></tr>
+<tr><td class='mono'>514</td><td>Syslog</td><td>UDP</td><td>设备日志外发</td><td>日志服务器</td></tr>
+<tr><td class='mono'>587</td><td>SMTP 提交</td><td>TCP</td><td>客户端发信</td><td>STARTTLS</td></tr>
+<tr><td class='mono'>636</td><td>LDAPS</td><td>TCP</td><td>目录服务加密</td><td>AD 域</td></tr>
+<tr><td class='mono'>993</td><td>IMAPS</td><td>TCP</td><td>邮件收取加密</td><td>邮件客户端</td></tr>
+<tr><td class='mono'>995</td><td>POP3S</td><td>TCP</td><td>邮件收取加密</td><td>邮件客户端</td></tr>
+<tr><td class='mono'>1433</td><td>MSSQL</td><td>TCP</td><td>SQL Server</td><td>数据库; 禁公网</td></tr>
+<tr><td class='mono'>1521</td><td>Oracle</td><td>TCP</td><td>Oracle DB</td><td>数据库; 禁公网</td></tr>
+<tr><td class='mono'>3306</td><td>MySQL</td><td>TCP</td><td>MySQL/MariaDB</td><td>数据库; 禁公网</td></tr>
+<tr><td class='mono'>3389</td><td>RDP</td><td>TCP</td><td>Windows 远程桌面</td><td>内网/VPN 内用</td></tr>
+<tr><td class='mono'>5060/5061</td><td>SIP</td><td>UDP/TCP</td><td>VoIP 信令</td><td>IP 电话</td></tr>
+<tr><td class='mono'>5432</td><td>PostgreSQL</td><td>TCP</td><td>PostgreSQL DB</td><td>数据库; 禁公网</td></tr>
+<tr><td class='mono'>6379</td><td>Redis</td><td>TCP</td><td>缓存数据库</td><td>高危! 无密码常见</td></tr>
+<tr><td class='mono'>8080</td><td>HTTP-Alt</td><td>TCP</td><td>Web 备用/Tomcat</td><td>应用服务器</td></tr>
+<tr><td class='mono'>8443</td><td>HTTPS-Alt</td><td>TCP</td><td>Web 加密备用</td><td>应用服务器</td></tr>
+<tr><td class='mono'>9092</td><td>Kafka</td><td>TCP</td><td>消息队列</td><td>大数据</td></tr>
+<tr><td class='mono'>179</td><td>BGP</td><td>TCP</td><td>AS 间路由</td><td>路由器</td></tr>
+<tr><td class='mono'>88</td><td>Kerberos</td><td>TCP/UDP</td><td>AD 认证</td><td>域环境</td></tr>
+</tbody>
+</table>
+</div>
+<h2>交换机上快速过滤端口流量</h2>
+<pre>
+# H3C / 华为 (VRP): 抓包过滤端口
+display packet-filter  # 查看ACL
+# 思科: 查看哪些端口在跑
+show ip sockets        # 路由器
+show control-plane host open-ports  # 交换机
+# 通用: Linux 服务器侧排查
+ss -tunap | grep -E ":(22|161|514|443) "
+</pre>
+<h2>高危端口加固清单</h2>
+<div class="box"><div style="font-size:13px;line-height:2">
+🔴 <b>23 Telnet</b> → 关闭, 换 SSH (三厂商命令见 <a href="https://bg8cfb.github.io/netops-cheatsheets/ssh-setup.html" style="color:#58a6ff">SSH 开启教程</a>)<br>
+🔴 <b>6379 Redis</b> → 必须设密码 + bind 内网<br>
+🔴 <b>3389 RDP / 445 SMB</b> → 禁止暴露公网, 走 VPN<br>
+🟡 <b>80 HTTP / 8080</b> → 管理页换 443<br>
+🟡 <b>161 SNMP v2c</b> → 换 v3 或加 ACL (见 <a href="https://bg8cfb.github.io/netops-cheatsheets/snmp-setup.html" style="color:#58a6ff">SNMP 配置教程</a>)
+</div></div>
+<p style="color:#8b949e;font-size:13px;margin-top:28px">相关工具：<a href="https://bg8cfb.github.io/netops-cheatsheets/subnet-calc.html" style="color:#58a6ff">子网计算器</a> · <a href="https://bg8cfb.github.io/netops-cheatsheets/ipv6-calc.html" style="color:#58a6ff">IPv6 计算器</a> · <a href="https://bg8cfb.github.io/netcfg-vault/" style="color:#58a6ff">交换机配置自动备份 netcfg-vault</a></p>
+</div>
+<script>
+function filt() {
+  var q = document.getElementById("q").value.trim().toLowerCase();
+  var rows = document.getElementById("tb").getElementsByTagName("tr");
+  for (var i = 0; i < rows.length; i++) {
+    var t = rows[i].textContent.toLowerCase();
+    rows[i].style.display = (!q || t.indexOf(q) >= 0) ? "" : "none";
+  }
+}
+</script>
+</body>
+</html>
